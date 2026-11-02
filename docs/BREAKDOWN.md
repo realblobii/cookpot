@@ -168,7 +168,7 @@ texture. A definition that fails must not crash the game or silently do nothing.
 
 - **Phase 0, research.** Read everything in `READING_LIST.md`, write `FINDINGS.md`, update this file.
   Output: go/no-go and a corrected design. **No code.**
-- **Phase 1, vertical slice.** Prove the hard hooks with the smallest possible library core: a throwaway
+- **Phase 1, vertical slice (written, not run).** Prove the hard hooks with the smallest possible library core: a throwaway
   test content mod supplies one block, and Cookpot opens a menu with 3 slots for it, with contents saved
   across reload. The test block and its hard-coded slots are scaffolding, not part of the shipped library.
   Proves open questions 1-3. Smallest possible build.

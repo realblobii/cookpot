@@ -180,3 +180,18 @@ A throwaway test `.hmod` (one block with a barrel template, one menu JSON with 3
 `cookpot:machine` file) and the smallest Cookpot: `block_entity`, `block_entity_container`, `screen`,
 `screen_draw`, `block_entity_ticks`/`tick` (counter in `nbt`). Acceptance: open the block, items persist across
 reopen and world reload, the counter draws on the screen. That proves Q1-Q5 in the real game.
+
+## Phase 2-3 build (2026-11-02, written the same evening; NOT run in the game)
+
+Implemented in `mixins/cookpot/`: recipe parsing and shapeless matching with tags, counts and a container slot;
+`timed`, `instant`, `staged` modes; heat from blocks at an offset (block id, `[property=value]`, block tags,
+per-source speed); fuel by item id or tag, optionally the game's own table; `lit` property; progress and burn bars.
+
+**Verified:** the pure logic compiles and 11 unit tests pass, but against a hand-written stand-in for `serde_json`
+(crates.io was unreachable here), so real `serde_json` behaviour (for example `as_i64` on `2.0`) is unchecked.
+**Not verified:** `tick.rs` and `draw.rs` were written against the pinned source (`native_block`,
+`native_block_property`, `native_set_block_property`, `native_recipe_result`, `items().item_tags/block_tags`,
+`providers().burn_time`, `ItemStack` fields) but never compiled, and nothing ran in Horizon. Likely first failures:
+a borrow in `cookpot_tick`'s closures, `game.items()`/`providers()` visibility, tag key format (with or without a
+namespace), whether the `tags/block/` folder name is right for content mods, and whether the unknown recipe `type`s
+pass `cargo horizon-mod check`.

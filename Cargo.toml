@@ -1,6 +1,6 @@
 [package]
 name = "cookpot-runtime"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2024"
 license = "MIT"
 description = "Cookpot's pure logic, unit-tested outside the game"

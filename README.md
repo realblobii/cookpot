@@ -58,10 +58,11 @@ Definitions ship **inside the author's content mod (`.hmod`)**. That is the supp
 
 ## Status
 
-Research is done (`docs/FINDINGS.md`) and a **Phase 1 scaffold** exists under `mixins/cookpot/` plus a throwaway
-test mod in `testmod/`. **None of it has been built or run in the game yet.** v1 targets **singleplayer**.
-Binding to vanilla blocks (fletching table) is **out of v1**: no hook can do it. Next step: build the Phase 1 bundle
-and run the acceptance check in `FINDINGS.md` ("Proposed first build"). `docs/AUTHORING.md` covers what exists so far.
+Research is done (`docs/FINDINGS.md`). The engine is **written but untested in the game**: machine and recipe files,
+`timed` / `instant` / `staged` modes, heat from author-chosen blocks (ids, properties, tags, any offset), fuel, bars,
+and a demo content mod (`testmod/`). The pure logic has unit tests (`cargo test`); the game hooks have **never been
+compiled against Horizon**. v1 targets **singleplayer**. Binding to vanilla blocks (fletching table) is out of v1:
+no hook can do it. `docs/AUTHORING.md` is the author guide.
 
 ## Files
 
