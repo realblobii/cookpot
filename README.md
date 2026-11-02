@@ -64,12 +64,20 @@ cross-mod machines (recipes and extensions that target another mod's machine by 
 compiled against Horizon**. v1 targets **singleplayer**. Binding to vanilla blocks (fletching table) is out of v1:
 no hook can do it. `docs/AUTHORING.md` is the author guide.
 
+## Documentation
+
+**Start at the [documentation home](docs/README.md).** It links every page:
+
+- [Quickstart](docs/QUICKSTART.md): your first machine in five files
+- [Authoring reference](docs/AUTHORING.md): every field
+- [Examples](docs/EXAMPLES.md): cooking pot, kiln, cutting board, still
+- [Add-ons](docs/ADDONS.md): use machines made by other mods
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [JSON schemas](schemas/) for editor validation
+
 ## Files
 
 - `CLAUDE.md`: rules for Claude working in this folder. Read first.
-- **Docs for mod authors:** `docs/QUICKSTART.md` (first machine), `docs/AUTHORING.md` (full reference),
-  `docs/ADDONS.md` (using machines from other mods), `docs/EXAMPLES.md` (cooking pot, kiln, cutting board, still),
-  `docs/TROUBLESHOOTING.md`, and `schemas/*.schema.json` (editor validation).
-- `docs/READING_LIST.md`, `docs/OPEN_QUESTIONS.md`, `docs/FINDINGS.md`: the research and what is untested.
-- `docs/BREAKDOWN.md`: design, phases, acceptance tests. `docs/LESSONS.md`: build and tooling lessons.
+- `docs/`: author docs (above) plus the research: `FINDINGS.md`, `BREAKDOWN.md`, `OPEN_QUESTIONS.md`,
+  `READING_LIST.md`, `LESSONS.md`.
 - `mixins/cookpot/`: the native mod. `testmod/`: demo content mods (`cptest` machine, `cpaddon` add-on using it).
