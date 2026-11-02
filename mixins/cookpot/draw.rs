@@ -1,6 +1,6 @@
 // A machine's texture (when it has one) and its progress bar.
 fn cookpot_draw(game: &crate::game::Game<'_>, block: &str, data: &[i32], batch: &mut HudBatch, origin: [f32; 2]) {
-    let Some(m) = cookpot::machine_for(block, || game.native_recipes_of_type(cookpot::MACHINE_TYPE).iter().map(|r| (r.id.clone(), (*r.json).clone())).collect()) else {
+    let Some(m) = cookpot::machine_for(block, || cookpot::FILE_TYPES.iter().flat_map(|t| game.native_recipes_of_type(t).iter().map(|r| (r.id.clone(), (*r.json).clone()))).collect()) else {
         return;
     };
     if let Some(texture) = &m.texture {

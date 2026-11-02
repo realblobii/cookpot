@@ -5,7 +5,7 @@ fn cookpot_tick(game: &mut crate::game::Game<'_>, pos: [i32; 3], entity: &mut Mo
         return;
     }
     let block = game.native_block(pos);
-    let Some(m) = cookpot::machine_for(&block, || game.native_recipes_of_type(cookpot::MACHINE_TYPE).iter().map(|r| (r.id.clone(), (*r.json).clone())).collect()) else {
+    let Some(m) = cookpot::machine_for(&block, || cookpot::FILE_TYPES.iter().flat_map(|t| game.native_recipes_of_type(t).iter().map(|r| (r.id.clone(), (*r.json).clone()))).collect()) else {
         return;
     };
     let recipes = cookpot::recipes_for(&m.id, || game.native_recipes_of_type(cookpot::RECIPE_TYPE).iter().map(|r| (r.id.clone(), (*r.json).clone())).collect());
@@ -23,6 +23,7 @@ fn cookpot_tick(game: &mut crate::game::Game<'_>, pos: [i32; 3], entity: &mut Mo
         burn_total: int(entity, "burn_total"),
         acc: int(entity, "acc"),
         recipe: int(entity, "recipe"),
+        xp: int(entity, "xp"),
     };
     let slots: Vec<Option<cookpot::Stack>> = (0..m.slots.len())
         .map(|i| {
@@ -96,6 +97,18 @@ fn cookpot_tick(game: &mut crate::game::Game<'_>, pos: [i32; 3], entity: &mut Mo
         }
     }
 
+    // Experience comes out as orbs above the machine when a craft finishes.
+    let above = [f64::from(pos[0]) + 0.5, f64::from(pos[1]) + 1.0, f64::from(pos[2]) + 0.5];
+    if step.xp > 0 {
+        game.award_orbs(above, step.xp);
+    }
+    // Sounds play for this window's player. LAN guests would need the server-side sound queue (untested).
+    for cue in &step.cues {
+        if let Some(sound) = m.sounds.get(*cue) {
+            game.native_play_local_sound(&sound.id, above, sound.volume, sound.pitch, 0);
+        }
+    }
+
     for (key, value) in [
         ("progress", st.progress),
         ("total", st.total),
@@ -103,6 +116,7 @@ fn cookpot_tick(game: &mut crate::game::Game<'_>, pos: [i32; 3], entity: &mut Mo
         ("burn_total", st.burn_total),
         ("acc", st.acc),
         ("recipe", st.recipe),
+        ("xp", st.xp),
     ] {
         entity.nbt.insert(horizon_world::nbt::JavaString::from(key), horizon_world::nbt::Tag::Int(value));
     }

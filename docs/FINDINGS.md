@@ -195,3 +195,18 @@ per-source speed); fuel by item id or tag, optionally the game's own table; `lit
 a borrow in `cookpot_tick`'s closures, `game.items()`/`providers()` visibility, tag key format (with or without a
 namespace), whether the `tags/block/` folder name is right for content mods, and whether the unknown recipe `type`s
 pass `cargo horizon-mod check`.
+
+## Phase 4 (XP, sounds, cross-mod machines; same evening, NOT run in the game)
+
+- **XP:** `Game::award_orbs(at, amount)` (`game/spill.rs:449`) spawns orbs; used above the machine when a craft finishes.
+  Fractions carry in the block entity (`xp`, thousandths). Vanilla's pay-on-take is not possible: no hook for taking from a
+  mod menu was found (`native_give_experience` needs a player uuid; the tick hook has none).
+- **Sounds:** `Game::native_play_local_sound` (`native_hooks.rs:3504`) plays for this window's player only and returns false
+  on a server. `GameLevel::native_play_sound` (server queue, API 61) is not reachable from a block-entity tick hook as written,
+  so LAN guests likely hear nothing. Custom sound ids work if the mod ships `assets/<ns>/sounds.json` (docs line 580).
+- **Cross-mod:** `native_recipes_of_type` returns every installed content mod's files of a type, so a recipe or
+  `cookpot:extension` in any mod can name another mod's machine by id (`<ns>:<file name>`). Extensions are applied after all
+  machines are read. Missing targets log a warning. The content manifest has no documented dependency field, so none is used.
+- **Verified:** 14 unit tests pass against a stand-in JSON library; the demo mods' files validate against `schemas/` and parse.
+- **Untested guesses:** `award_orbs` visibility and effect from a tick hook, `native_play_local_sound` firing in singleplayer
+  from a server-thread tick, whether block entities tick while unloaded neighbours exist, `tags/block/` path for content mods.

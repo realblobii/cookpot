@@ -1,37 +1,51 @@
-# Authoring a Cookpot machine (v0.2.0)
+# Cookpot authoring reference (v0.3.0)
 
-> **Status: written, not run in the game.** The pure logic (parsing, recipe matching, heat, fuel, the three
-> process modes) has unit tests that passed against a stand-in JSON library, not the real `serde_json`. The
-> game hooks (`tick.rs`, `draw.rs`, `container.rs`...) were **never compiled against Horizon and never run**.
-> Expect kinks. See `docs/FINDINGS.md` for the list of untested assumptions.
+> **Status: written, not run in the game.** The pure logic (parsing, matching, heat, fuel, modes, XP, sounds,
+> add-on extensions) has unit tests that passed against a stand-in JSON library. The game hooks were never compiled
+> against Horizon or run. See `docs/FINDINGS.md` for the untested list and `docs/TROUBLESHOOTING.md` if something
+> does not work.
 
-Cookpot is a native mod that you install once. You write **no Rust**: a machine is a few JSON files inside
-your own content mod (`.hmod`). Cookpot finds them when a world loads. `testmod/cptest/` is a complete example.
+New here? Read [QUICKSTART.md](QUICKSTART.md) first (a working machine in five files). Making an add-on for
+someone else's machine? Read [ADDONS.md](ADDONS.md). Copyable machines are in [EXAMPLES.md](EXAMPLES.md). Editors
+can validate your JSON with the files in [`../schemas/`](../schemas/).
 
-## What you ship in your content mod
+Cookpot is one native mod. You never write Rust: machines, recipes and add-ons are JSON inside a content mod
+(`.hmod`).
 
-### 1. The block: `data/<ns>/horizon/block/<name>.json`
+## The file types
+
+| You write | Where | `type` | What it is |
+|---|---|---|---|
+| Block | `data/<ns>/horizon/block/<name>.json` | (no Cookpot type) | The block the player places. |
+| Menu | `data/<ns>/horizon/menu/<name>.json` | (no Cookpot type) | Slot count and which slots are results. |
+| Machine | `data/<ns>/recipe/<name>.json` | `cookpot:machine` | Slots, screen, heat, fuel, mode, sounds. |
+| Recipe | `data/<ns>/recipe/<name>.json` | `cookpot:recipe` | What a machine makes. May be in **any** mod. |
+| Extension | `data/<ns>/recipe/<name>.json` | `cookpot:extension` | Adds heat blocks and fuels to a machine from **another** mod. |
+
+Machine, recipe and extension files sit under `recipe/` because the game keeps recipe files of an unknown `type`
+as raw JSON; that is how Cookpot finds them. **A machine's id is its file id: `<ns>:<file name>`.** The file
+`data/cptest/recipe/pot_machine.json` is the machine `cptest:pot_machine`. Recipes and extensions point at this id.
+
+## 1. The block
 
 ```json
 { "template": "minecraft:barrel", "item": true }
 ```
 
-The template **must have a block entity** (barrel, chest or furnace). To show a lit state, copy a template with a
-`lit` property (furnace) and name it in `process.lit_property`.
+The template **must have a block entity** (barrel, chest, furnace). To show a lit look, use a template with a `lit`
+property (furnace) and set `process.lit_property`.
 
-### 2. The menu: `data/<ns>/horizon/menu/<name>.json`
+## 2. The menu
 
 ```json
 { "slots": 5, "data_slots": 4, "results": [4] }
 ```
 
-`slots` must equal the number of slots in the machine file. `results` lists the output slot numbers
-(zero-based, in the order the machine lists its slots). Use `data_slots: 4` to get the progress and burn bars.
+- `slots` must equal the number of slots in the machine file.
+- `results` lists output slot numbers (zero-based, in the machine's slot order).
+- `data_slots` is the number of synced numbers. Use **4** (progress, total, burn, burn total) to get both bars.
 
-### 3. The machine: `data/<ns>/recipe/<name>.json`
-
-It lives under `recipe/` because the game keeps recipe files of an unknown `type` as raw JSON; that is how Cookpot
-finds it. Its id (`<ns>:<name>`, here `cptest:pot_machine`) is what recipes point at.
+## 3. The machine
 
 ```json
 {
@@ -40,19 +54,17 @@ finds it. Its id (`<ns>:<name>`, here `cptest:pot_machine`) is what recipes poin
   "menu": "mypack:pot",
   "data_slots": 4,
   "mode": "timed",
-  "heat": {
-    "offset": [0, -1, 0],
-    "sources": [
-      "minecraft:campfire[lit=true]",
-      { "block": "minecraft:magma_block", "speed": 2.0 },
-      "#mypack:heat_sources"
-    ]
-  },
+  "heat": { "offset": [0, -1, 0], "sources": [ "minecraft:campfire[lit=true]", "#mypack:heat_sources" ] },
   "process": {
     "default_time": 200,
     "keep_progress_when_cold": false,
     "lit_property": "lit",
     "fuel": { "slot": "fuel", "burn_times": { "minecraft:coal": 1600, "#minecraft:planks": 300 }, "game_table": true }
+  },
+  "sounds": {
+    "start": "minecraft:block.lava.pop",
+    "working": { "id": "minecraft:block.campfire.crackle", "interval": 40, "volume": 0.6 },
+    "done": { "id": "minecraft:entity.experience_orb.pickup", "pitch": 0.8 }
   },
   "gui": {
     "size": [176, 166],
@@ -69,22 +81,42 @@ finds it. Its id (`<ns>:<name>`, here `cptest:pot_machine`) is what recipes poin
 }
 ```
 
-| Field | Meaning |
-|---|---|
-| `block` | A block id, or a list. Several blocks may share one machine. |
-| `menu`, `data_slots` | The menu type from step 2 and its synced numbers (use 4). |
-| `mode` | `timed` (default), `instant` or `staged`. See below. |
-| `heat` | Optional. Blocks that power the machine. See "Heat from blocks". |
-| `process.default_time` | Ticks a recipe takes when it has no `time` (default 200). |
-| `process.keep_progress_when_cold` | Keep progress when unpowered (default: it drains 2 per tick). |
-| `process.lit_property` | A block property set to `true` while working, `false` otherwise. |
-| `process.fuel` | Optional fuel slot. See "Fuel". |
-| `gui.*` | Size, optional `texture` (`<ns>:gui/<name>`), slots, `progress` and `flame` bars. |
+### Top-level fields
 
-**Roles:** `input`, `fuel`, `container`, `output`. A slot without `pos` is placed in rows of three (the built-in
-layout), so a machine needs no art to work.
+| Field | Required | Meaning |
+|---|---|---|
+| `block` | yes | A block id, or a list of ids sharing the machine. |
+| `menu` | yes | The menu type id from step 2. |
+| `data_slots` | no | Synced numbers (0 to the slot limit). Use 4. |
+| `mode` | no | `timed` (default), `instant`, `staged`. See [Modes](#modes). |
+| `heat` | no | Blocks that power the machine. See [Heat](#heat-from-blocks). |
+| `process` | no | Timing, fuel, lit state. |
+| `sounds` | no | `start`, `working`, `done`. See [Sounds](#sounds). |
+| `gui` | yes | Screen layout. |
 
-### 4. Recipes: `data/<ns>/recipe/<name>.json`
+### `process`
+
+| Field | Default | Meaning |
+|---|---|---|
+| `default_time` | 200 | Ticks a recipe takes when it names no `time`. |
+| `keep_progress_when_cold` | false | Keep progress when unpowered. Otherwise it drains 2 per tick. |
+| `lit_property` | none | A block property set to `true` while the machine works, `false` otherwise. |
+| `fuel` | none | Fuel slot. See [Fuel](#fuel). |
+
+### `gui`
+
+| Field | Default | Meaning |
+|---|---|---|
+| `size` | `[176, 166]` | Panel size in GUI pixels. |
+| `texture` | none | A content-mod texture `assets/<ns>/textures/gui/<name>.png`, written `<ns>:gui/<name>`, drawn at the panel's top left. |
+| `slots` | required | List of `{ "id", "role", "pos"? }`. `id`s are unique. |
+| `progress` | none | Bar for craft progress: `pos`, `size` (default `[24, 4]`). |
+| `flame` | none | Bar for fuel burn (timed) or charges (staged): `pos`, `size` (default `[14, 4]`). |
+
+**Roles:** `input`, `fuel`, `container`, `output`. Players cannot fill output slots. A slot without `pos` is placed in
+rows of three, centred (the built-in layout), so a machine needs no art to work.
+
+## 4. Recipes
 
 ```json
 {
@@ -99,59 +131,84 @@ layout), so a machine needs no art to work.
 }
 ```
 
-- **Inputs** are shapeless: each needs its own input slot. An input is an item id, a `#tag`, a list (any one of
-  them) or `{ "item" | "tag" | "items", "count" }`.
-- **`container`**: an item the container slot must hold; one is used up.
-- **`result`** (one) or **`results`** (several; they fill output slots, merging into like stacks). A result may carry
-  `components`. A recipe whose results do not fit stays paused.
-- **`time`** overrides `default_time`. **`charges`** is what a staged machine spends per craft (default 1).
-- **`experience`** is read but **not paid out yet**.
-- The first matching recipe in load order wins.
+| Field | Meaning |
+|---|---|
+| `machine` | **Required.** The machine id (`<ns>:<file name>`). Any mod may add recipes to any installed machine. |
+| `inputs` | Shapeless; every entry needs its own input slot. An entry is an item id, `#tag`, list (any one), or `{ "item" \| "tag" \| "items", "count" }` (count 1-64). |
+| `container` | An item the container slot must hold; one is used up. |
+| `result` / `results` | One result or a list. Each is an item id or `{ "id", "count", "components"? }`. They fill output slots, merging into like stacks. If they do not fit, the machine waits. |
+| `time` | Ticks; overrides `default_time`. |
+| `charges` | Staged machines: charges spent per craft (default 1). |
+| `experience` | XP points paid out when the craft finishes. See [Experience](#experience). |
+
+The first matching recipe (in load order) wins. A bare id means `minecraft:`.
 
 ## Heat from blocks
 
-`heat.sources` is a list; any matching source powers the machine, the fastest wins. Look at the block at `offset`
-from the machine (default `[0, -1, 0]`, directly below; any offset works, such as the side or above).
+`heat.sources` lists blocks that power the machine; the fastest matching source wins. Cookpot looks at the block at
+`heat.offset` from the machine (default `[0, -1, 0]`, directly below; `[0, 1, 0]` is above, `[1, 0, 0]` beside).
 
-- `"minecraft:campfire"`: a block id.
-- `"minecraft:campfire[lit=true]"`: with block properties that must all match.
-- `"#mypack:heat_sources"` or `"#mypack:hot[lit=true]"`: a block tag, so other mods and packs can add heat blocks
-  by adding to your tag, with no change to your machine.
-- `{ "block": "...", "tag": "...", "properties": { "lit": "true" }, "speed": 2.0 }`: `speed` scales progress
-  (1.0 normal, 2.0 twice as fast).
+| Form | Example |
+|---|---|
+| Block id | `"minecraft:campfire"` |
+| With properties | `"minecraft:campfire[lit=true]"` |
+| Block tag | `"#mypack:heat_sources"`, `"#mypack:hot[lit=true]"` |
+| Object | `{ "block": "...", "tag": "...", "properties": { "lit": true }, "speed": 2.0 }` |
 
-With a heat source present, fuel is not used. With none, the machine falls back to the fuel slot.
+`speed` scales progress: 1.0 normal, 2.0 twice as fast. **Use a tag when you want other packs to add heat blocks**:
+they add values to your tag and your machine needs no change. With a heat source present, fuel is not used.
 
 ## Fuel
 
-`process.fuel.slot` names the fuel slot. `burn_times` maps an item id or `#tag` to ticks (`timed`, `instant`) or
-charges (`staged`); an exact item id beats a tag. `game_table: true` also accepts anything the game burns in a
-furnace (this uses a private game API, so a Horizon update may break it). A machine with neither `heat` nor `fuel`
-always runs.
+`process.fuel.slot` names the fuel slot. `burn_times` maps an item id or `#tag` to **ticks** (`timed`, `instant`) or
+**charges** (`staged`); an exact item id beats a tag. `game_table: true` also accepts anything the game burns in a
+furnace (a private game API: a Horizon update may break it). A machine with neither `heat` nor `fuel` always runs.
 
 ## Modes
 
-- **`timed`**: furnace-like. Fuel burns for its burn time and power continues across crafts.
-- **`instant`**: crafts on the next tick the inputs match (no waiting). It does not wait for a click.
-- **`staged`**: brewing-stand-like. Fuel adds charges, each craft spends the recipe's `charges`, and a recipe can
-  have several results. A heat source runs it without spending charges.
+| Mode | Like | Behaviour |
+|---|---|---|
+| `timed` | furnace, smoker | Progress over `time`; fuel burns for its burn time and carries across crafts. |
+| `instant` | cutting board | Crafts on the next tick the inputs match. It does not wait for a click. |
+| `staged` | brewing stand | Fuel adds charges, each craft spends the recipe's `charges`, a recipe may have several results. A heat block runs it without spending charges. |
 
-## Errors
+## Sounds
 
-A machine file that does not parse is skipped with a warning in `logs/latest.log` that says why, for example
-`two slots are called `in``, or ``slot `x`: role `y` is not input, fuel, container or output``. The game still starts.
+`sounds` has three optional cues. Each is a sound id string or `{ "id", "volume" (0-16), "pitch" (0-4), "interval" }`.
+
+| Cue | Plays |
+|---|---|
+| `start` | When a craft begins making progress. |
+| `working` | Repeatedly while a craft runs, every `interval` ticks of progress (default 40; only for this cue). |
+| `done` | When a craft finishes. |
+
+Ids are vanilla (`minecraft:block.campfire.crackle`) or your own (`mypack:pot_bubble`, defined in
+`assets/mypack/sounds.json`). Sounds play for the local player. Guests on a LAN game may not hear them (untested).
+
+## Experience
+
+When a craft finishes, the recipe's `experience` is added to the machine's tally, and whole points are paid out as
+experience orbs above the machine; fractions carry over to the next craft (0.7 pays 0, then 1, then 0, then 1...).
+This is **not** vanilla's furnace behaviour (stored XP paid when you take the item): Horizon has no hook for taking
+an item out of a mod's menu. The orbs are collected by nearby players.
+
+## Machines from other mods
+
+Recipes and extensions can target any machine by id. See [ADDONS.md](ADDONS.md).
 
 ## Limits you should know
 
-- The menu cannot restrict which items a slot accepts in this Horizon build. Hoppers can put into any non-output
-  slot and take from the output; players can still place anything anywhere.
-- Output slots are assumed to hold 64 items, whatever the item's real limit.
-- Binding to a **vanilla block** (such as the fletching table) is not possible: no hook can attach slots or saved
-  data to one. Add your own block that copies its look instead.
-- Content is read once when the game starts. Editing your JSON needs a game restart, **not** a rebuild of Cookpot.
+- The menu cannot restrict which items a slot accepts in this Horizon build. Hoppers can put into any non-output slot
+  and take from the output; players can place anything anywhere.
+- Output slots assume a 64-item limit, whatever the item's real limit.
+- Binding to a **vanilla block** (such as the fletching table) is not possible: no hook can attach slots or saved data to
+  one. Add your own block that copies its look.
+- Content is read once at game start. Editing JSON needs a restart, **not** a rebuild of Cookpot.
 - Clients and servers need the same mods.
+- A container's leftovers (an empty bucket) are not given back.
 
-## Not yet
+## Errors
 
-Experience payout, sounds, items drawn inside the block, comparator output, recipe viewer support, taking a
-container's leftovers (such as an empty bucket) back, fuel remainders.
+A file that does not parse is skipped with a warning in `logs/latest.log` that names the file and says why; the game
+still starts. A recipe or extension for a machine that is not installed also logs a warning that names the missing
+machine. Common messages are in [TROUBLESHOOTING.md](TROUBLESHOOTING.md).

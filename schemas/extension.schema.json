@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Cookpot extension (adds heat blocks / fuels to another mod's machine)",
+  "type": "object",
+  "required": [
+    "type",
+    "machine"
+  ],
+  "properties": {
+    "type": {
+      "const": "cookpot:extension"
+    },
+    "machine": {
+      "type": "string",
+      "pattern": ":"
+    },
+    "heat_sources": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "block id, #tag, optionally with [prop=value,...]"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "block": {
+                "type": "string"
+              },
+              "tag": {
+                "type": "string"
+              },
+              "properties": {
+                "type": "object"
+              },
+              "speed": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            }
+          }
+        ]
+      }
+    },
+    "burn_times": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    }
+  },
+  "anyOf": [
+    {
+      "required": [
+        "heat_sources"
+      ]
+    },
+    {
+      "required": [
+        "burn_times"
+      ]
+    }
+  ]
+}

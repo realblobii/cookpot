@@ -58,18 +58,18 @@ Definitions ship **inside the author's content mod (`.hmod`)**. That is the supp
 
 ## Status
 
-Research is done (`docs/FINDINGS.md`). The engine is **written but untested in the game**: machine and recipe files,
-`timed` / `instant` / `staged` modes, heat from author-chosen blocks (ids, properties, tags, any offset), fuel, bars,
-and a demo content mod (`testmod/`). The pure logic has unit tests (`cargo test`); the game hooks have **never been
+Research is done (`docs/FINDINGS.md`). The engine is **written but untested in the game**: machine, recipe and add-on extension files,
+`timed` / `instant` / `staged` modes, heat from author-chosen blocks (ids, properties, tags, any offset), fuel, bars, XP orbs, sounds,
+cross-mod machines (recipes and extensions that target another mod's machine by id), and demo mods (`testmod/`). The pure logic has unit tests (`cargo test`); the game hooks have **never been
 compiled against Horizon**. v1 targets **singleplayer**. Binding to vanilla blocks (fletching table) is out of v1:
 no hook can do it. `docs/AUTHORING.md` is the author guide.
 
 ## Files
 
 - `CLAUDE.md`: rules for Claude working in this folder. Read first.
-- `docs/READING_LIST.md`: what to read, in order, and how.
-- `docs/OPEN_QUESTIONS.md`: questions the research must answer before design is final.
-- `docs/BREAKDOWN.md`: draft design, data formats, phases, acceptance tests.
-- `docs/LESSONS.md`: build and tooling lessons from building the Shader Sliders mod.
-- `docs/FINDINGS.md`: research answers with sources.
-- `docs/AUTHORING.md`: how to write a machine (partial, untested).
+- **Docs for mod authors:** `docs/QUICKSTART.md` (first machine), `docs/AUTHORING.md` (full reference),
+  `docs/ADDONS.md` (using machines from other mods), `docs/EXAMPLES.md` (cooking pot, kiln, cutting board, still),
+  `docs/TROUBLESHOOTING.md`, and `schemas/*.schema.json` (editor validation).
+- `docs/READING_LIST.md`, `docs/OPEN_QUESTIONS.md`, `docs/FINDINGS.md`: the research and what is untested.
+- `docs/BREAKDOWN.md`: design, phases, acceptance tests. `docs/LESSONS.md`: build and tooling lessons.
+- `mixins/cookpot/`: the native mod. `testmod/`: demo content mods (`cptest` machine, `cpaddon` add-on using it).

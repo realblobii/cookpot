@@ -1,0 +1,8 @@
+id = "cpaddon"
+name = "Cookpot Add-on Demo"
+version = "0.1.0"
+description = "Shows a second mod using a machine made by another mod: an extension (heat blocks, fuels) and recipes. Needs Cookpot Test (cptest)."
+authors = ["cookpot"]
+api = "0.2"
+side = "both"
+capabilities = ["registries"]

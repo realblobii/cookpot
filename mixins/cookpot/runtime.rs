@@ -6,6 +6,10 @@ use std::sync::{Arc, Mutex};
 pub const MACHINE_TYPE: &str = "cookpot:machine";
 /// The block entity id of every machine.
 pub const ENTITY_ID: &str = "cookpot:machine";
+/// The `type` of a file that adds heat sources or fuels to a machine another mod made.
+pub const EXTENSION_TYPE: &str = "cookpot:extension";
+/// Every file type Cookpot reads that describes a machine (definitions, then extensions).
+pub const FILE_TYPES: [&str; 2] = [MACHINE_TYPE, EXTENSION_TYPE];
 /// The recipe `type` of a machine's recipe file (`data/<ns>/recipe/<name>.json`).
 pub const RECIPE_TYPE: &str = "cookpot:recipe";
 /// The most items one output slot holds. The game's real per-item limit is not consulted.
@@ -80,6 +84,74 @@ pub struct Machine {
     pub keep_progress: bool,
     /// A block property (such as `lit`) set to `true` while the machine works.
     pub lit_property: Option<String>,
+    pub sounds: Sounds,
+}
+
+/// One sound a machine makes.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Sound {
+    /// A sound event id: a vanilla one or a mod's own (`mypack:pot_bubble`).
+    pub id: String,
+    pub volume: f32,
+    pub pitch: f32,
+    /// For the working sound: ticks of progress between plays.
+    pub interval: i32,
+}
+
+#[derive(Clone, Debug, PartialEq, Default)]
+pub struct Sounds {
+    /// When a craft begins.
+    pub start: Option<Sound>,
+    /// Repeatedly while a craft runs.
+    pub working: Option<Sound>,
+    /// When a craft finishes.
+    pub done: Option<Sound>,
+}
+
+/// Which of a machine's sounds to play.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Cue {
+    Start,
+    Working,
+    Done,
+}
+
+impl Sounds {
+    pub fn get(&self, cue: Cue) -> Option<&Sound> {
+        match cue {
+            Cue::Start => self.start.as_ref(),
+            Cue::Working => self.working.as_ref(),
+            Cue::Done => self.done.as_ref(),
+        }
+    }
+}
+
+/// Whether `id` is a sound event id the game accepts: `namespace:path`, lowercase.
+pub fn valid_sound_id(id: &str) -> bool {
+    let Some((ns, path)) = id.split_once(':') else { return false };
+    let ok = |c: char, slash: bool| c.is_ascii_lowercase() || c.is_ascii_digit() || "_.-".contains(c) || (slash && c == '/');
+    !ns.is_empty() && !path.is_empty() && ns.chars().all(|c| ok(c, false)) && path.chars().all(|c| ok(c, true))
+}
+
+/// A sound: `"ns:event"` or `{ "id", "volume", "pitch", "interval" }`.
+fn parse_sound(what: &str, v: &serde_json::Value) -> Result<Sound, String> {
+    let (id, volume, pitch, interval) = match v {
+        serde_json::Value::String(s) => (s.as_str(), 1.0, 1.0, 40),
+        serde_json::Value::Object(_) => (
+            v.get("id").and_then(|x| x.as_str()).ok_or(format!("`sounds.{what}` needs an `id`"))?,
+            v.get("volume").and_then(number).unwrap_or(1.0),
+            v.get("pitch").and_then(number).unwrap_or(1.0),
+            v.get("interval").and_then(|x| x.as_i64()).unwrap_or(40).clamp(1, 1_000_000) as i32,
+        ),
+        _ => return Err(format!("`sounds.{what}` is a sound id or an object")),
+    };
+    if !valid_sound_id(id) {
+        return Err(format!("`sounds.{what}`: `{id}` is not a sound id like `minecraft:block.campfire.crackle`"));
+    }
+    if !(0.0..=16.0).contains(&volume) || !(0.0..=4.0).contains(&pitch) {
+        return Err(format!("`sounds.{what}`: volume must be 0 to 16 and pitch 0 to 4"));
+    }
+    Ok(Sound { id: id.to_owned(), volume, pitch, interval })
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -229,6 +301,12 @@ pub fn parse(id: &str, json: &serde_json::Value) -> Result<Machine, String> {
             Some(Fuel { slot, burn_times, game_table })
         }
     };
+    let mut sounds = Sounds::default();
+    if let Some(list) = json.get("sounds") {
+        if let Some(v) = list.get("start") { sounds.start = Some(parse_sound("start", v)?); }
+        if let Some(v) = list.get("working") { sounds.working = Some(parse_sound("working", v)?); }
+        if let Some(v) = list.get("done") { sounds.done = Some(parse_sound("done", v)?); }
+    }
     let flame = match gui.and_then(|g| g.get("flame")) {
         None => None,
         Some(p) => Some(Bar {
@@ -255,6 +333,7 @@ pub fn parse(id: &str, json: &serde_json::Value) -> Result<Machine, String> {
         fuel,
         keep_progress,
         lit_property,
+        sounds,
     })
 }
 
@@ -343,9 +422,43 @@ struct Registry {
 
 static REGISTRY: Mutex<Registry> = Mutex::new(Registry { loaded: false, machines: Vec::new() });
 
-/// The machine whose `block` is `block`. `files` lists the `cookpot:machine` files (id and JSON) and is
-/// only called until some are found: it is empty outside a world, and the content mods never change
-/// while the game runs. A file that does not parse is skipped with a warning in the log.
+/// Adds an extension's heat sources and fuels to a machine. The error says what is wrong, for the log.
+pub fn extend(machines: &mut [Machine], id: &str, json: &serde_json::Value) -> Result<(), String> {
+    let target = json.get("machine").and_then(|v| v.as_str()).ok_or("`machine` must name the machine to extend")?;
+    let m = machines
+        .iter_mut()
+        .find(|m| m.id == target)
+        .ok_or(format!("machine `{target}` is not installed (is its mod missing?)"))?;
+    let mut added = 0;
+    if let Some(list) = json.get("heat_sources").and_then(|v| v.as_array()) {
+        let heat = m.heat.get_or_insert(Heat { offset: [0, -1, 0], sources: Vec::new() });
+        for entry in list {
+            heat.sources.push(parse_source(entry).map_err(|e| format!("{id}: {e}"))?);
+            added += 1;
+        }
+    }
+    if let Some(map) = json.get("burn_times").and_then(|v| v.as_object()) {
+        let fuel = m.fuel.as_mut().ok_or(format!("machine `{target}` has no fuel slot to add burn times to"))?;
+        for (k, v) in map.iter() {
+            let n = v.as_i64().ok_or(format!("`burn_times` `{k}` must be a whole number"))?;
+            let key = match k.strip_prefix('#') {
+                Some(tag) => format!("#{}", qualify(tag)),
+                None => qualify(k),
+            };
+            fuel.burn_times.push((key, n.clamp(0, 1_000_000) as i32));
+            added += 1;
+        }
+    }
+    if added == 0 {
+        return Err(format!("{id}: an extension needs `heat_sources` or `burn_times`"));
+    }
+    Ok(())
+}
+
+/// The machine whose `block` is `block`. `files` lists the machine definition files and extension files
+/// (id and JSON; `FILE_TYPES`) and is only called until some are found: it is empty outside a world, and
+/// the content mods never change while the game runs. A file that does not parse is skipped with a warning
+/// in the log. Extensions apply after every definition is read, so load order between mods does not matter.
 pub fn machine_for(
     block: &str,
     files: impl FnOnce() -> Vec<(String, serde_json::Value)>,
@@ -356,15 +469,37 @@ pub fn machine_for(
         if files.is_empty() {
             return None;
         }
-        for (id, json) in files {
-            match parse(&id, &json) {
-                Ok(m) => reg.machines.push(Arc::new(m)),
-                Err(e) => log::warn!("cookpot: {id}: {e}"),
-            }
-        }
+        reg.machines = load_machines(files);
         reg.loaded = true;
     }
     reg.machines.iter().find(|m| m.blocks.iter().any(|b| b == block)).cloned()
+}
+
+/// Parses every definition, then applies the extensions.
+pub fn load_machines(files: Vec<(String, serde_json::Value)>) -> Vec<Arc<Machine>> {
+    let mut machines = Vec::new();
+    let mut extensions = Vec::new();
+    for (id, json) in files {
+        if json.get("type").and_then(|t| t.as_str()) == Some(EXTENSION_TYPE) {
+            extensions.push((id, json));
+            continue;
+        }
+        match parse(&id, &json) {
+            Ok(m) => machines.push(m),
+            Err(e) => log::warn!("cookpot: {id}: {e}"),
+        }
+    }
+    for (id, json) in extensions {
+        if let Err(e) = extend(&mut machines, &id, &json) {
+            log::warn!("cookpot: extension {id}: {e}");
+        }
+    }
+    machines.into_iter().map(Arc::new).collect()
+}
+
+/// The ids of every loaded machine.
+pub fn machine_ids() -> Vec<String> {
+    REGISTRY.lock().map(|r| r.machines.iter().map(|m| m.id.clone()).collect()).unwrap_or_default()
 }
 
 /// The values for the menu's data slots: progress, total, burn (or charges), burn total, then zeros up to
@@ -458,7 +593,7 @@ pub struct Recipe {
     pub container: Option<Ingredient>,
     pub results: Vec<ResultSpec>,
     pub time: Option<i32>,
-    /// Parsed and kept; paying it out is not implemented yet.
+    /// Experience points paid out as orbs when a craft finishes (fractions carry over).
     pub experience: f32,
     /// Charges a staged machine spends per craft.
     pub charges: i32,
@@ -540,15 +675,27 @@ pub fn recipes_for(
 ) -> Vec<Arc<Recipe>> {
     let Ok(mut reg) = RECIPES.lock() else { return Vec::new() };
     if !reg.loaded {
-        for (id, json) in files() {
-            match parse_recipe(&id, &json) {
-                Ok(r) => reg.recipes.push(Arc::new(r)),
-                Err(e) => log::warn!("cookpot: recipe {id}: {e}"),
-            }
-        }
+        reg.recipes = load_recipes(files(), &machine_ids());
         reg.loaded = true;
     }
     reg.recipes.iter().filter(|r| r.machine == machine_id).cloned().collect()
+}
+
+/// Parses every recipe, warning about those for a machine not in `known`.
+pub fn load_recipes(files: Vec<(String, serde_json::Value)>, known: &[String]) -> Vec<Arc<Recipe>> {
+    let mut out = Vec::new();
+    for (id, json) in files {
+        match parse_recipe(&id, &json) {
+            Ok(r) => {
+                if !known.contains(&r.machine) {
+                    log::warn!("cookpot: recipe {id} is for machine `{}`, which is not installed (is its mod missing?)", r.machine);
+                }
+                out.push(Arc::new(r));
+            }
+            Err(e) => log::warn!("cookpot: recipe {id}: {e}"),
+        }
+    }
+    out
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -615,6 +762,8 @@ pub struct State {
     pub acc: i32,
     /// 0 for none, else the index of the recipe in progress plus one.
     pub recipe: i32,
+    /// Experience earned but not yet paid, in thousandths of a point.
+    pub xp: i32,
 }
 
 /// A craft to apply to the machine's slots.
@@ -633,6 +782,10 @@ pub struct Step {
     pub fuel_slot: Option<usize>,
     /// The machine is working: a `lit` property follows this.
     pub lit: bool,
+    /// Whole experience points to pay out now (as orbs above the machine).
+    pub xp: u32,
+    /// Sounds to play, in order.
+    pub cues: Vec<Cue>,
 }
 
 /// The input slots a recipe uses, or None when it does not match. Slots are tried in order; an ingredient
@@ -799,8 +952,16 @@ pub fn step(
             }
         }
     }
+    let before = st.progress;
     if powered {
         st.progress += pace(&mut st.acc, rate);
+        if before == 0 && st.progress > 0 {
+            out.cues.push(Cue::Start);
+        } else if let Some(w) = &m.sounds.working {
+            if st.progress / w.interval > before / w.interval {
+                out.cues.push(Cue::Working);
+            }
+        }
     } else if !m.keep_progress {
         st.progress = (st.progress - 2).max(0);
     }
@@ -812,6 +973,10 @@ pub fn step(
         if paid_by_charges {
             st.burn -= r.charges;
         }
+        st.xp += (r.experience * 1000.0).round() as i32;
+        out.xp = (st.xp / 1000) as u32;
+        st.xp %= 1000;
+        out.cues.push(Cue::Done);
         out.craft = Some(Craft { consume, recipe: ri });
     }
     out
@@ -1030,6 +1195,70 @@ mod tests {
         let mut st = State::default();
         let out = step(&m, &recipes, &mut st, &slots, 0.0, &|_| 0, &meat_tag);
         assert!(out.craft.is_some());
+    }
+
+    #[test]
+    fn xp_pays_whole_points_and_carries_fractions() {
+        let m = pot();
+        let mut r = (*soup()[0]).clone();
+        r.experience = 0.7;
+        r.time = Some(0);
+        let recipes = vec![Arc::new(r)];
+        let slots = vec![stack("t:tomato", 2), stack("t:beef", 1), None, stack("minecraft:bowl", 1), None];
+        let mut st = State::default();
+        let first = step(&m, &recipes, &mut st, &slots, 1.0, &|_| 0, &meat_tag);
+        assert!(first.craft.is_some());
+        assert_eq!((first.xp, st.xp), (0, 700));
+        let second = step(&m, &recipes, &mut st, &slots, 1.0, &|_| 0, &meat_tag);
+        assert_eq!((second.xp, st.xp), (1, 400));
+    }
+
+    #[test]
+    fn sounds_parse_and_cue() {
+        let mut m = pot();
+        let d = json!({ "type": "cookpot:machine", "block": "t:pot", "menu": "t:pot",
+            "sounds": { "start": "minecraft:block.lava.pop", "working": { "id": "t:bubble", "interval": 2, "volume": 0.5 },
+                        "done": { "id": "minecraft:entity.player.levelup", "pitch": 2.0 } },
+            "gui": { "slots": [ { "id": "a", "role": "input" }, { "id": "o", "role": "output" } ] } });
+        let parsed = parse("t:s", &d).unwrap();
+        assert_eq!(parsed.sounds.working.as_ref().unwrap().interval, 2);
+        assert_eq!(parsed.sounds.done.as_ref().unwrap().pitch, 2.0);
+        let mut bad = d.clone();
+        bad["sounds"]["start"] = json!("Not A Sound");
+        assert!(parse("t:s", &bad).unwrap_err().contains("sounds.start"));
+        m.sounds = parsed.sounds;
+        let recipes = soup();
+        let slots = vec![stack("t:tomato", 2), stack("t:beef", 1), None, stack("minecraft:bowl", 1), None];
+        let mut st = State::default();
+        let cues: Vec<Vec<Cue>> = (0..3).map(|_| step(&m, &recipes, &mut st, &slots, 1.0, &|_| 0, &meat_tag).cues).collect();
+        assert_eq!(cues, vec![vec![Cue::Start], vec![Cue::Working], vec![Cue::Done]]);
+    }
+
+    #[test]
+    fn another_mod_can_extend_a_machine_and_add_recipes() {
+        let machine = json!({ "type": "cookpot:machine", "block": "base:pot", "menu": "base:pot",
+            "process": { "fuel": { "slot": "f", "burn_times": { "minecraft:coal": 100 } } },
+            "gui": { "slots": [ { "id": "a", "role": "input" }, { "id": "f", "role": "fuel" }, { "id": "o", "role": "output" } ] } });
+        let ext = json!({ "type": "cookpot:extension", "machine": "base:pot_machine",
+            "heat_sources": ["addon:stove[lit=true]"], "burn_times": { "#addon:fuels": 50 } });
+        let orphan = json!({ "type": "cookpot:extension", "machine": "gone:pot_machine", "heat_sources": ["a:b"] });
+        // Extensions listed before the machine still apply.
+        let files = vec![("addon:more".to_owned(), ext), ("addon:orphan".to_owned(), orphan), ("base:pot_machine".to_owned(), machine)];
+        let machines = load_machines(files);
+        let m = machines.iter().find(|m| m.blocks.contains(&"base:pot".to_owned())).unwrap().clone();
+        let heat = m.heat.as_ref().unwrap();
+        assert_eq!(heat.sources[0].block.as_deref(), Some("addon:stove"));
+        assert_eq!(heat.sources[0].properties, vec![("lit".to_owned(), "true".to_owned())]);
+        assert!(m.fuel.as_ref().unwrap().burn_times.iter().any(|(k, n)| k == "#addon:fuels" && *n == 50));
+        // A recipe from a third mod points at the first mod's machine by id.
+        let known: Vec<String> = machines.iter().map(|m| m.id.clone()).collect();
+        let recipes = load_recipes(vec![
+            ("addon:bread".to_owned(), json!({ "machine": "base:pot_machine", "inputs": ["addon:dough"], "result": "addon:bread" })),
+            ("addon:lost".to_owned(), json!({ "machine": "gone:pot_machine", "inputs": ["a:b"], "result": "a:c" })),
+        ], &known);
+        // Both load (the second warns in the log); a machine only runs the recipes that name it.
+        assert_eq!(recipes.iter().filter(|r| r.machine == "base:pot_machine").count(), 1);
+        assert_eq!(recipes[0].id, "addon:bread");
     }
 
     #[test]

@@ -1,0 +1,9 @@
+{
+  "type": "cookpot:recipe",
+  "machine": "cptest:pot_machine",
+  "inputs": [ { "item": "minecraft:baked_potato", "count": 2 }, "minecraft:egg" ],
+  "container": "minecraft:bowl",
+  "results": [ { "id": "minecraft:mushroom_stew" } ],
+  "time": 60,
+  "experience": 0.5
+}
