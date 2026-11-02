@@ -2,7 +2,7 @@
 
 > **Status: written, not run in the game.** The pure logic (parsing, matching, heat, fuel, modes, XP, sounds,
 > add-on extensions) has unit tests that passed against a stand-in JSON library. The game hooks were never compiled
-> against Horizon or run. See `docs/FINDINGS.md` for the untested list and `docs/TROUBLESHOOTING.md` if something
+> against Horizon or run. See `docs/dev/FINDINGS.md` for the untested list and `docs/TROUBLESHOOTING.md` if something
 > does not work.
 
 New here? Read [QUICKSTART.md](QUICKSTART.md) first (a working machine in five files). Making an add-on for

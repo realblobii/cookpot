@@ -154,7 +154,7 @@ come from our own data via `native_screen`, `native_screen_draw`, `native_screen
 
 **21. Textures from a content mod found at runtime:** yes (Q20).
 
-## Corrections to `docs/BREAKDOWN.md`
+## Corrections to `docs/dev/BREAKDOWN.md`
 
 1. **Definition and recipe format**: files go in `data/<ns>/recipe/` with a `type` of `cookpot:machine` or
    `cookpot:recipe`, not `crafters/` and `crafter_recipes/` (the game only keeps unknown-type recipes; arbitrary

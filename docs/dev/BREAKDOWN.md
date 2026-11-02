@@ -1,6 +1,6 @@
 # Cookpot: design breakdown (DRAFT)
 
-> **Research done 2026-11-02: see `docs/FINDINGS.md`, section "Corrections to BREAKDOWN.md".** Corrections applied below:
+> **Research done 2026-11-02: see `docs/dev/FINDINGS.md`, section "Corrections to BREAKDOWN.md".** Corrections applied below:
 > definitions and recipes are `type: cookpot:*` files under `data/<ns>/recipe/`, the author also ships a menu JSON, and
 > `vanilla_block` binding is **dropped from v1** (no hook can attach slots or saved data to a vanilla block; user decision
 > 2026-11-02). Everything here is still **unbuilt/untested in the game** except the Phase 1 scaffold, which is unrun.

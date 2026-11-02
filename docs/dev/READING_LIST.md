@@ -1,7 +1,7 @@
 # Reading list (do this before any code)
 
 For each item: read the real text, not a summary, note the answer to anything in
-`OPEN_QUESTIONS.md`, and record the source in `docs/FINDINGS.md`. WebFetch truncates long pages: use
+`OPEN_QUESTIONS.md`, and record the source in `docs/dev/FINDINGS.md`. WebFetch truncates long pages: use
 `offset`, or better, clone `https://github.com/horizon-rust/horizon` and read files locally. Get the
 pinned source with `git -C horizon archive <commit> | tar -x -C <readonly-dir>`.
 
@@ -50,9 +50,9 @@ Clone `https://github.com/horizon-rust/horizon-mixins` and read `README.md` and 
 ## D. Reference implementation
 
 `~/horizon-slider-mod/shader_sliders/`: bundle layout, `[[module]]`, cancellable HEAD, packaging. Read
-`mixins/shader_sliders/*` and `tools/package.py`. See also `docs/LESSONS.md`.
+`mixins/shader_sliders/*` and `tools/package.py`. See also `docs/dev/LESSONS.md`.
 
 ## E. Before finishing the research
 
-Write `docs/FINDINGS.md`, then tell the user: is the goal feasible, what changed from the draft,
+Write `docs/dev/FINDINGS.md`, then tell the user: is the goal feasible, what changed from the draft,
 and what you propose to build first. Wait for their go-ahead before coding.

@@ -32,7 +32,7 @@ Working demos: [`testmod/cptest`](../testmod/cptest) (a machine) and [`testmod/c
 
 | Page | Contents |
 |---|---|
-| [Findings](FINDINGS.md) | Research answers with sources, and the list of untested assumptions. |
-| [Design breakdown](BREAKDOWN.md) | Design, phases and acceptance tests. |
-| [Open questions](OPEN_QUESTIONS.md), [Reading list](READING_LIST.md) | The research brief. |
-| [Lessons](LESSONS.md) | Build and tooling lessons. |
+| [Findings](dev/FINDINGS.md) | Research answers with sources, and the list of untested assumptions. |
+| [Design breakdown](dev/BREAKDOWN.md) | Design, phases and acceptance tests. |
+| [Open questions](dev/OPEN_QUESTIONS.md), [Reading list](dev/READING_LIST.md) | The research brief. |
+| [Lessons](dev/LESSONS.md) | Build and tooling lessons. |

@@ -12,13 +12,13 @@ Decisions already made by the user (do not re-ask):
 - **If the research shows a required hook is missing, stop and tell the user** with evidence. Do not
   silently fall back or invent a workaround.
 - UI: authors may use a **built-in layout** or supply **their own UI** (texture + slot positions).
-Read `README.md` for the goal and `docs/BREAKDOWN.md` for the design before doing anything.
+Read `README.md` for the goal and `docs/dev/BREAKDOWN.md` for the design before doing anything.
 
 ## Rule 0: read the docs first, and say what you read
 
-Do not write or edit any code until you have worked through `docs/READING_LIST.md` in order and
-written your answers to every question in `docs/OPEN_QUESTIONS.md` (put them in
-`docs/FINDINGS.md`, with the URL or file and line each answer came from). The design in
+Do not write or edit any code until you have worked through `docs/dev/READING_LIST.md` in order and
+written your answers to every question in `docs/dev/OPEN_QUESTIONS.md` (put them in
+`docs/dev/FINDINGS.md`, with the URL or file and line each answer came from). The design in
 BREAKDOWN.md is a **draft written without having read the hook source**. Parts of it will be
 wrong. Fix the draft from what you find, and tell the user what changed.
 
@@ -57,7 +57,7 @@ wrong. Fix the draft from what you find, and tell the user what changed.
 ## Mixin rules learned the hard way (horizon-mixins 0.6.0)
 
 Native mods are source patches (`horizon-mixin.toml` + helper `.rs`) applied by `horizon-mixins`
-and compiled into the game. See `docs/LESSONS.md` for the full list. The big ones:
+and compiled into the game. See `docs/dev/LESSONS.md` for the full list. The big ones:
 
 1. **`OVERWRITE`, `RETURN` and other body-rewriting hooks reject any target function containing a
    closure, `?`, async, or unsafe/const block** (`E_UNSUPPORTED_CONTROL_FLOW`). Only **`HEAD`**
