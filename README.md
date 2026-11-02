@@ -58,9 +58,10 @@ Definitions ship **inside the author's content mod (`.hmod`)**. That is the supp
 
 ## Status
 
-Nothing is built. v1 targets **singleplayer** (design so server support can follow). `docs/BREAKDOWN.md` is a **draft design written before the hook source was read**.
-Start with `CLAUDE.md`, then `docs/READING_LIST.md` and `docs/OPEN_QUESTIONS.md`. The first job is
-research: find out whether this is possible with the hooks that exist, and how.
+Research is done (`docs/FINDINGS.md`) and a **Phase 1 scaffold** exists under `mixins/cookpot/` plus a throwaway
+test mod in `testmod/`. **None of it has been built or run in the game yet.** v1 targets **singleplayer**.
+Binding to vanilla blocks (fletching table) is **out of v1**: no hook can do it. Next step: build the Phase 1 bundle
+and run the acceptance check in `FINDINGS.md` ("Proposed first build"). `docs/AUTHORING.md` covers what exists so far.
 
 ## Files
 
@@ -69,4 +70,5 @@ research: find out whether this is possible with the hooks that exist, and how.
 - `docs/OPEN_QUESTIONS.md`: questions the research must answer before design is final.
 - `docs/BREAKDOWN.md`: draft design, data formats, phases, acceptance tests.
 - `docs/LESSONS.md`: build and tooling lessons from building the Shader Sliders mod.
-- `docs/FINDINGS.md`: (to create) answers with sources.
+- `docs/FINDINGS.md`: research answers with sources.
+- `docs/AUTHORING.md`: how to write a machine (partial, untested).

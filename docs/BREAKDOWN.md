@@ -1,8 +1,9 @@
 # Cookpot: design breakdown (DRAFT)
 
-> **Research done 2026-11-02: see `docs/FINDINGS.md`, section "Corrections to BREAKDOWN.md".** Main changes: definitions and
-> recipes are `type: cookpot:*` files under `data/<ns>/recipe/`, the author also ships a menu JSON, and `vanilla_block`
-> binding is dropped from v1 (missing hook). Sections below are not yet rewritten.
+> **Research done 2026-11-02: see `docs/FINDINGS.md`, section "Corrections to BREAKDOWN.md".** Corrections applied below:
+> definitions and recipes are `type: cookpot:*` files under `data/<ns>/recipe/`, the author also ships a menu JSON, and
+> `vanilla_block` binding is **dropped from v1** (no hook can attach slots or saved data to a vanilla block; user decision
+> 2026-11-02). Everything here is still **unbuilt/untested in the game** except the Phase 1 scaffold, which is unrun.
 >
 > **Status: draft.** Written before reading the hook source or `native-mods.md` in full. Every
 > technical claim here is a hypothesis to check against `OPEN_QUESTIONS.md`. Where the research
@@ -22,8 +23,8 @@ One native mod, `cookpot` (mod id: lowercase letters, digits, `_` only), provide
 machine**: a block with an inventory, a menu, a tick process and a recipe lookup. Everything specific
 to a machine is data:
 
-- **Machine definition** (`crafters/<name>.json`): which block, slot layout, GUI, heat rule, process.
-- **Recipes** (`crafter_recipes/<name>/*.json`): inputs, container item, result, time, XP.
+- **Machine definition** (`data/<ns>/recipe/<name>.json`, `type: cookpot:machine`): which block, slot layout, GUI, heat rule, process.
+- **Recipes** (`data/<ns>/recipe/*.json`, `type: cookpot:recipe`): inputs, container item, result, time, XP.
 - **Block, model, textures, lang**: ordinary content-mod (`.hmod`) assets.
 
 So the three actors are: Cookpot (native, written once), the author's content mod (no code), and
@@ -47,18 +48,16 @@ multi-output recipes.
 **Binding** (what block the machine attaches to):
 
 1. `new_block`: a block from the author's content mod (the common case, e.g. the cooking pot).
-2. `vanilla_block`: take over right-click on an **existing vanilla block** that has no menu, such as the
-   **fletching table**, and open the machine's menu instead (or only when a condition holds, e.g. crouch
-   not held). Needs a hook that intercepts block "use". (Open Q 15.)
+2. ~~`vanilla_block`~~ **Out of v1** (Q15 in FINDINGS.md): no existing hook attaches slots or saved data to a
+   vanilla block. Authors can instead add a replacement block that copies the fletching table's look.
 3. `vanilla_block_replace`: replace the behaviour of a vanilla machine entirely (smoker with a
    different menu). Probably out of scope until 1 and 2 work; note conflicts with other mods.
 
-The same definition file selects the mode and the binding, so a fletching table that crafts arrows
-from flint, sticks and feathers is a definition file, not a new mod.
+The same definition file selects the mode and the binding.
 
 ## 2. Data formats (proposal, not final)
 
-### Machine definition `data/<ns>/crafters/cooking_pot.json`
+### Machine definition `data/<ns>/recipe/cooking_pot.json` with `"type": "cookpot:machine"`
 
 ```json
 {
@@ -111,7 +110,7 @@ one output; `single`: one input and one output). They are drawn with the game's 
 look. A machine definition using a built-in layout only supplies recipes, timing and binding. A custom UI
 must name every slot and may mix built-in widgets. The loader validates both forms the same way.
 
-### Recipe `data/<ns>/crafter_recipes/<crafter>/<id>.json`
+### Recipe `data/<ns>/recipe/<id>.json` with `"type": "cookpot:recipe"`
 
 ```json
 {
@@ -128,8 +127,7 @@ must name every slot and may mix built-in widgets. The loader validates both for
 Other machines are expressed in the same schema. A **cutting board** is `mode: "instant"` with one input
 slot, a `tool` requirement and result drops. A **kiln** is `timed` with a `fuel` slot. A **brewing-stand
 style** machine is `mode: "staged"` with several input and output slots plus a charge-giving fuel slot.
-A **fletching table** upgrade is `"binding": { "type": "vanilla_block", "block": "minecraft:fletching_table" }`
-with `mode: "instant"`. A machine with no heat uses `heat.required: false`.
+A machine with no heat uses `heat.required: false`.
 Keep the schema small first; add fields only when a real machine needs them.
 
 ### Validation
@@ -148,7 +146,7 @@ texture. A definition that fails must not crash the game or silently do nothing.
 
 ## 4. Components (to confirm against the source)
 
-1. **Definition loader**: finds `crafters/*.json` and `crafter_recipes/**` in installed content mods
+1. **Definition loader**: finds `cookpot:machine` and `cookpot:recipe` files via `native_recipes_of_type` in installed content mods
    / data files at game load and on reload; builds an in-memory registry; validates. (Open Q 4, 5, 6.)
 2. **Block binding**: connects a content-mod block id to a definition: placing it creates the machine's
    block entity with the right number of slots. (Open Q 1, 3.)
@@ -178,13 +176,12 @@ texture. A definition that fails must not crash the game or silently do nothing.
   Proves 4 and 5: edit the JSON, reload, no rebuild.
 - **Phase 3, recipes and process.** Matching, heat, progress, output, XP, persistence of progress.
   Build `timed` first, then `instant`, then `staged` (brewing-style multi-output with charges).
-- **Phase 3b, vanilla binding.** Make the fletching table open a Cookpot menu (needs the block-use hook).
-  Do this after `new_block` works so a failure here does not block the core.
+- **Phase 3b, vanilla binding.** Dropped from v1 (missing hook, FINDINGS Q15). Revisit only if Horizon adds one.
 - **Phase 4, polish.** GUI details, tooltips, sounds, drops, validation messages.
 - **Phase 5, automation and integration.** Hoppers, comparator, item display, recipe viewer.
 - **Phase 6, docs and proof.** `docs/AUTHORING.md` is the main deliverable: how to write a definition
   and recipes, built-in layout reference, custom UI guide, binding options, error messages, worked
-  examples (cooking pot, furnace-style kiln, fletching table). A small demo `.hmod` made with zero Rust
+  examples (cooking pot, furnace-style kiln). A small demo `.hmod` made with zero Rust
   proves it; it is separate from the Cookpot library. Package Cookpot as `.hnmod`.
 
 Each phase ends with a build the user runs in the game and a short checklist of what to look for.
@@ -203,8 +200,7 @@ Each phase ends with a build the user runs in the game and a short checklist of 
 9. A furnace-style definition smelts over time with fuel burn and a visible flame/progress, and keeps
    going correctly after save and reload.
 10. A brewing-style definition processes several slots at once and uses up its charges.
-11. The fletching table (vanilla block) opens the new menu on right-click and still places, breaks and
-    drops normally; an unrelated vanilla block is untouched.
+11. (Dropped with vanilla binding.)
 12. (Multiplayer, if supported) Two players see consistent contents; no duplication via shift-click.
 
 ## 7. Risks
