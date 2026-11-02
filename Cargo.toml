@@ -1,0 +1,14 @@
+[package]
+name = "cookpot-runtime"
+version = "0.1.2"
+edition = "2024"
+license = "MIT"
+description = "Cookpot's pure logic, unit-tested outside the game"
+
+[lib]
+# This exact source is also injected into the game as a module by horizon-mixins.
+path = "mixins/cookpot/runtime.rs"
+
+[dependencies]
+serde_json = "1"
+log = "0.4"

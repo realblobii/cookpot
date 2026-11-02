@@ -1,0 +1,14 @@
+{
+  "type": "cookpot:machine",
+  "block": "cptest:pot",
+  "menu": "cptest:pot",
+  "data_slots": 2,
+  "gui": {
+    "slots": [
+      { "id": "in", "role": "input" },
+      { "id": "extra", "role": "input" },
+      { "id": "out", "role": "output", "pos": [116, 30] }
+    ],
+    "progress": { "pos": [60, 31], "size": [40, 6] }
+  }
+}
