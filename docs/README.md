@@ -13,6 +13,7 @@ JSON files only, and lets other mods add recipes and fuels to your machines.
 | [Authoring reference](AUTHORING.md) | You need every field: machine, menu, recipes, heat, fuel, modes, sounds, XP. |
 | [Examples](EXAMPLES.md) | You want to copy a cooking pot, kiln, cutting board, still or stove-fed machine. |
 | [Add-ons](ADDONS.md) | You are adding recipes, heat blocks or fuels to a machine **another mod** made, or sharing yours. |
+| [Shipping](SHIPPING.md) | You are releasing a mod that needs Cookpot. |
 | [Troubleshooting](TROUBLESHOOTING.md) | Something does not work, or the log shows a `cookpot` warning. |
 | [JSON schemas](../schemas/) | You want your editor to check your files (`machine`, `recipe`, `extension`). |
 
