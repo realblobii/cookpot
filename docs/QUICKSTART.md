@@ -1,7 +1,7 @@
 # Quickstart: your first machine
 
 You need: Cookpot installed (a native mod, built once by the launcher), and a content mod folder. Everything below is
-JSON. Replace `mypack` with your mod id. The finished example is `testmod/cptest/`.
+JSON. Replace `mypack` with your mod id. A larger finished example is [Delightful](https://github.com/realblobii/delightful).
 
 > Nothing here has been run in the game yet; if a step fails, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 

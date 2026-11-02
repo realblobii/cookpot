@@ -24,7 +24,7 @@ Cookpot is one native mod. You never write Rust: machines, recipes and add-ons a
 
 Machine, recipe and extension files sit under `recipe/` because the game keeps recipe files of an unknown `type`
 as raw JSON; that is how Cookpot finds them. **A machine's id is its file id: `<ns>:<file name>`.** The file
-`data/cptest/recipe/pot_machine.json` is the machine `cptest:pot_machine`. Recipes and extensions point at this id.
+`data/mypack/recipe/pot_machine.json` is the machine `mypack:pot_machine`. Recipes and extensions point at this id.
 
 ## 1. The block
 

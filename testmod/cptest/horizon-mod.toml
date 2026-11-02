@@ -1,8 +1,0 @@
-id = "cptest"
-name = "Cookpot Test"
-version = "0.2.0"
-description = "Demo machine for Cookpot: a pot heated from a block below or by fuel. Not part of the library."
-authors = ["cookpot"]
-api = "0.2"
-side = "both"
-capabilities = ["registries"]

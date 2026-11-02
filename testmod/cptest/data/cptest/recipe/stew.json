@@ -1,9 +1,0 @@
-{
-  "type": "cookpot:recipe",
-  "machine": "cptest:pot_machine",
-  "inputs": [ { "item": "minecraft:potato", "count": 2 }, { "items": ["minecraft:carrot", "minecraft:beetroot"] } ],
-  "container": "minecraft:bowl",
-  "result": { "id": "minecraft:rabbit_stew", "count": 1 },
-  "time": 100,
-  "experience": 1.0
-}

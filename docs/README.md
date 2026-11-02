@@ -17,8 +17,7 @@ JSON files only, and lets other mods add recipes and fuels to your machines.
 | [Troubleshooting](TROUBLESHOOTING.md) | Something does not work, or the log shows a `cookpot` warning. |
 | [JSON schemas](../schemas/) | You want your editor to check your files (`machine`, `recipe`, `extension`). |
 
-Working demos: [`testmod/cptest`](../testmod/cptest) (a machine) and [`testmod/cpaddon`](../testmod/cpaddon)
-(an add-on that extends it).
+Real-world example: [Delightful](https://github.com/realblobii/delightful) (its cooking pot and cutting board).
 
 ## Which file do I write?
 

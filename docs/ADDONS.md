@@ -3,7 +3,7 @@
 Cookpot's machines are shared. Any mod can add recipes to, or extend, a machine another mod made, with no code and
 no Cookpot-specific dependency field. This is how an add-on mod can grow a base mod's cooking pot.
 
-> Written from the source, **not run in the game**. The demo is `testmod/cpaddon/` (needs `testmod/cptest/`).
+> Written from the source, **not run in the game**. For a full set of machine and recipe files, look at [Delightful](https://github.com/realblobii/delightful) (`mods/delightful/data/delightful/recipe/`).
 
 ## The machine id
 

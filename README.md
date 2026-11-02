@@ -26,9 +26,8 @@ Start at the **[documentation home](docs/README.md)**:
 - [Shipping your mod](docs/SHIPPING.md) and [Troubleshooting](docs/TROUBLESHOOTING.md)
 - [JSON schemas](schemas/) for editor validation
 
-Working demos: [`testmod/cptest`](testmod/cptest) (a machine) and [`testmod/cpaddon`](testmod/cpaddon) (an add-on that extends it).
-Real-world use: [Delightful](https://github.com/realblobii/delightful), a Farmer's Delight-style mod, builds its cooking pot and
-cutting board with Cookpot.
+Real-world example: [Delightful](https://github.com/realblobii/delightful), a Farmer's Delight-style mod, builds its cooking pot and
+cutting board with Cookpot, and doubles as the test mod.
 
 ## Status
 

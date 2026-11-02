@@ -9,6 +9,6 @@
 4. Add-ons that extend another mod's machine only need that machine's id: see [Add-ons](ADDONS.md). Treat published machine ids as public
    API and never rename them.
 5. Content is read once at game start: JSON edits need a game restart, not a Cookpot rebuild.
-6. If something fails, search `logs/latest.log` for `cookpot` and read [Troubleshooting](TROUBLESHOOTING.md). The demos in
-   [`testmod/`](../testmod) tell a Cookpot fault from a pack fault.
+6. If something fails, search `logs/latest.log` for `cookpot` and read [Troubleshooting](TROUBLESHOOTING.md). Delightful is a larger working
+   example to compare against.
 7. Check your files against the [schemas](../schemas/) in your editor.

@@ -1,6 +1,0 @@
-{
-  "type": "cookpot:extension",
-  "machine": "cptest:pot_machine",
-  "heat_sources": [ "minecraft:furnace[lit=true]", { "block": "minecraft:blast_furnace", "properties": { "lit": true }, "speed": 1.5 } ],
-  "burn_times": { "minecraft:blaze_rod": 2400, "#minecraft:logs": 300 }
-}
