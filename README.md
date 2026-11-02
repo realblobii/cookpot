@@ -1,7 +1,6 @@
 # Cookpot
 
-Cookpot lets [Horizon](https://github.com/horizon-rust/horizon) content mods add **new crafting machines** (a cooking pot, a cutting
-board, a kiln, a still) with JSON files only, no Rust. It adds no machines of its own: it is the engine, and your mod brings the
+Cookpot lets [Horizon](https://github.com/horizon-rust/horizon) content mods add **new crafting machines** with JSON files only, no Rust. It adds no machines of its own: it is the engine, and your mod brings the
 blocks, art and recipes. Other mods can then add recipes, heat sources and fuels to your machines.
 
 - **Three machine kinds:** `timed` (like a furnace), `staged` (brewing-stand style, several outputs) and `instant` (click to craft).
