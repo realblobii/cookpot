@@ -4,6 +4,16 @@ fn cookpot_tick(game: &mut crate::game::Game<'_>, pos: [i32; 3], entity: &mut Mo
     if entity.id != cookpot::ENTITY_ID {
         return;
     }
+    // Takes `n` items from a slot, emptying it at zero.
+    let take = |slot: &mut Option<ItemStack>, n: u32| {
+        if let Some(s) = slot.as_mut() {
+            if s.count <= n {
+                *slot = None;
+            } else {
+                s.count -= n;
+            }
+        }
+    };
     let block = game.native_block(pos);
     let Some(m) = cookpot::machine_for(&block, || cookpot::FILE_TYPES.iter().flat_map(|t| game.native_recipes_of_type(t).iter().map(|r| (r.id.clone(), (*r.json).clone()))).collect()) else {
         return;
@@ -51,7 +61,7 @@ fn cookpot_tick(game: &mut crate::game::Game<'_>, pos: [i32; 3], entity: &mut Mo
                 if m.fuel.as_ref().is_some_and(|f| f.game_table) {
                     // The game's own fuel table: a private API, so a nightly may break this line.
                     let stack = ItemStack { item: std::sync::Arc::from(item), count: 1, damage: 0, extra: None };
-                    game.providers().burn_time(game.items(), &stack, false)
+                    game.res.providers().burn_time(game.items(), &stack, false)
                 } else {
                     0
                 }
@@ -100,7 +110,7 @@ fn cookpot_tick(game: &mut crate::game::Game<'_>, pos: [i32; 3], entity: &mut Mo
     // Experience comes out as orbs above the machine when a craft finishes.
     let above = [f64::from(pos[0]) + 0.5, f64::from(pos[1]) + 1.0, f64::from(pos[2]) + 0.5];
     if step.xp > 0 {
-        game.award_orbs(above, step.xp);
+        game.spawn_orbs(above, step.xp);
     }
     // Sounds play for this window's player. LAN guests would need the server-side sound queue (untested).
     for cue in &step.cues {
@@ -127,17 +137,6 @@ fn cookpot_tick(game: &mut crate::game::Game<'_>, pos: [i32; 3], entity: &mut Mo
         let want = if step.lit { "true" } else { "false" };
         if game.native_block_property(pos, key).as_deref() != Some(want) {
             game.native_set_block_property(pos, key, want);
-        }
-    }
-}
-
-// Takes `n` items from a slot, emptying it at zero.
-fn take(slot: &mut Option<ItemStack>, n: u32) {
-    if let Some(s) = slot.as_mut() {
-        if s.count <= n {
-            *slot = None;
-        } else {
-            s.count -= n;
         }
     }
 }
